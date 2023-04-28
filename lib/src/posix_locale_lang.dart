@@ -1,6 +1,10 @@
+// Copyright 2023, Anthony Champagne. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
 // ignore_for_file: avoid-substring
 
-import 'package:anthochamp_dart_essentials/dart_essentials.dart';
+import 'package:ac_dart_essentials/ac_dart_essentials.dart';
 
 /// POSIX Locale LANG Environment Variable (IEEE Std 1003.1)
 /// https://pubs.opengroup.org/onlinepubs/9699919799/
@@ -77,7 +81,10 @@ class PosixLocaleLang {
       modifiers = modifier.split(';').map((element) {
         final keyValue = element.split('=');
 
-        return MapEntry(keyValue.first, keyValue.last);
+        return MapEntry(
+          keyValue.first,
+          keyValue.length > 1 ? keyValue.sublist(1).join('=') : '',
+        );
       });
     }
 
@@ -89,7 +96,7 @@ class PosixLocaleLang {
     );
   }
 
-  bool isMinimalLocale() => kMinimalLocaleIdentifiers.contains(language);
+  bool get minimalLocale => kMinimalLocaleIdentifiers.contains(language);
 
   @override
   String toString() {

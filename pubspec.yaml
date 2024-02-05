@@ -1,5 +1,5 @@
 name: ac_posix_locale
-description: POSIX locale related types.
+description: POSIX locale related types
 version: 0.1.0
 repository: https://github.com/anthochamp/dart-posix-locale
 

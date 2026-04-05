@@ -1,21 +1,27 @@
-// SPDX-FileCopyrightText: © 2023 - 2024 Anthony Champagne <dev@anthonychampagne.fr>
+// SPDX-FileCopyrightText: © 2023 - 2026 Anthony Champagne <dev@anthonychampagne.fr>
 //
 // SPDX-License-Identifier: BSD-3-Clause
 
 // ignore_for_file: avoid-substring
 
 import 'package:ac_dart_essentials/ac_dart_essentials.dart';
+import 'package:meta/meta.dart';
 
 /// POSIX Locale LANG Environment Variable (IEEE Std 1003.1)
 /// https://pubs.opengroup.org/onlinepubs/9699919799/
+@immutable
 class PosixLocaleLang {
   static const kIso639_1CodeLength = 2;
   static const kIso3166_1CodeLength = 2;
+
+  /// Pattern for POSIX codeset identifiers (case-insensitive, e.g. UTF-8, ISO8859-1).
   static const kCodesetPattern = r'[a-z0-9_\-]+';
+
+  /// Minimal locale identifiers that are not ISO 639-1 language codes.
   static const kMinimalLocaleIdentifiers = ['POSIX', 'C'];
 
-  /// ISO 639-1 2-character language codes
-  /// or it may be a minimal locale identifier
+  /// ISO 639-1 2-character language codes, or a minimal locale identifier
+  /// (`'C'` or `'POSIX'`). Use [minimalLocale] to distinguish the two cases.
   final String language;
 
   /// ISO 3166-1 2-character country codes.
@@ -35,8 +41,10 @@ class PosixLocaleLang {
     this.codeset,
     this.modifiers = const [],
   }) {
-    if (language.length != kIso639_1CodeLength ||
-        kMinimalLocaleIdentifiers.contains(language)) {
+    // Minimal locale identifiers ('C', 'POSIX') are valid; regular language
+    // codes must be exactly kIso639_1CodeLength characters.
+    if (!kMinimalLocaleIdentifiers.contains(language) &&
+        language.length != kIso639_1CodeLength) {
       throw ArgumentError.value(language, 'language');
     }
     if (territory != null && territory!.length != kIso3166_1CodeLength) {
@@ -96,7 +104,43 @@ class PosixLocaleLang {
     );
   }
 
+  /// Returns `true` if [language] is a minimal locale identifier (`'C'` or `'POSIX'`).
   bool get minimalLocale => kMinimalLocaleIdentifiers.contains(language);
+
+  /// Returns a copy of this instance with the given fields replaced.
+  PosixLocaleLang copyWith({
+    String? language,
+    Object? territory = _undefinedSentinel,
+    Object? codeset = _undefinedSentinel,
+    Iterable<MapEntry<String, String>>? modifiers,
+  }) =>
+      PosixLocaleLang(
+        language: language ?? this.language,
+        territory: territory == _undefinedSentinel
+            ? this.territory
+            : territory as String?,
+        codeset:
+            codeset == _undefinedSentinel ? this.codeset : codeset as String?,
+        modifiers: modifiers ?? this.modifiers,
+      );
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PosixLocaleLang &&
+          runtimeType == other.runtimeType &&
+          language == other.language &&
+          territory == other.territory &&
+          codeset == other.codeset &&
+          _modifierMapEquals(modifiers, other.modifiers);
+
+  @override
+  int get hashCode => Object.hash(
+        language,
+        territory,
+        codeset,
+        Object.hashAll(modifiers.map((e) => Object.hash(e.key, e.value))),
+      );
 
   @override
   String toString() {
@@ -110,11 +154,31 @@ class PosixLocaleLang {
     if (modifiers.isNotEmpty) {
       locale += '@';
       locale += modifiers
-          .map((modifier) =>
-              '${modifier.key}${modifier.value.isEmpty ? '' : '=${modifier.value}'}')
+          .map(
+            (modifier) =>
+                '${modifier.key}${modifier.value.isEmpty ? '' : '=${modifier.value}'}',
+          )
           .join(';');
     }
 
     return locale;
   }
+}
+
+// Sentinel object for copyWith nullable parameters.
+const _undefinedSentinel = Object();
+
+bool _modifierMapEquals(
+  Iterable<MapEntry<String, String>> a,
+  Iterable<MapEntry<String, String>> b,
+) {
+  final listA = a.toList();
+  final listB = b.toList();
+  if (listA.length != listB.length) return false;
+  for (var i = 0; i < listA.length; i++) {
+    if (listA[i].key != listB[i].key || listA[i].value != listB[i].value) {
+      return false;
+    }
+  }
+  return true;
 }
